@@ -1,6 +1,6 @@
 //C:\Users\selin\OneDrive\Masaüstü\trae\yoklama-sistemi\src\routes\courses.js
 import express from "express";
-import pool from "../database/db.js"; // PostgreSQL bağlantısı
+import pool from "../database/db.js"; 
 import fs from 'fs';
 import path from 'path';
 import xlsx from "xlsx";

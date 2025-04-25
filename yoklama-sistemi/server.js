@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import verifyToken from './middleware/verifyToken.js';
 
 import checkinRouter from './src/routes/checkin.js';
 import filesRouter from './src/routes/files.js';
@@ -30,6 +31,11 @@ app.use(express.urlencoded({ extended: true }));
 
 // ✅ Static upload dosyalarını sunmak için
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+app.get('/api/profile', verifyToken, (req, res) => {
+  const email = req.user.email;
+  res.json({ message: `Merhaba ${email}, profilin burası.` });
+});
 
 // ✅ Routerları bağla
 app.use(checkinRouter);

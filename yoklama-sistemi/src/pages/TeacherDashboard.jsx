@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import CourseCard from "../components/CourseCard";
+import axios from "axios";
 
 function TeacherDashboard() {
   const [courses, setCourses] = useState([]);
@@ -10,6 +11,26 @@ function TeacherDashboard() {
   const navigate = useNavigate();
   const email = localStorage.getItem("email");
   const fullName = localStorage.getItem("fullName");
+  const [profile, setProfile] = useState(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+  
+    axios.get("http://localhost:5000/api/profile", {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+    .then(res => setProfile(res.data))
+    .catch(err => {
+      console.error("Token geçersiz ya da oturum yok", err);
+      localStorage.removeItem("token");
+      localStorage.removeItem("email");
+      localStorage.removeItem("fullName");
+      navigate("/login");
+    });
+  }, []);
+  
 
   useEffect(() => {
     fetch(`http://localhost:5000/api/courses/${email}`)
@@ -76,8 +97,14 @@ function TeacherDashboard() {
 
   return (
      <div className="min-h-screen bg-white text-black p-6">
-      <h1 className="text-2xl font-bold mb-2">Hoş geldiniz {fullName}</h1>
-      <h2 className="text-2xl font-bold mb-6">Derslerim</h2>
+      <div>
+      {profile ? (
+        <h1>Hoş geldin! {profile.message}</h1>
+      ) : (
+        <p>Yükleniyor...</p>
+      )}
+    </div>
+      <h1 className="text-2xl font-bold mb-6">Derslerim</h1>
       <form onSubmit={handleAddCourse} className="mb-6 flex flex-col gap-4">
         <div className="flex items-center gap-4">
           <input
