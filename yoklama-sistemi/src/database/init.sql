@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS teachers (
   email VARCHAR(255) UNIQUE NOT NULL,
   password TEXT NOT NULL,
   full_name VARCHAR(255)
+  is_approved BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS courses (
