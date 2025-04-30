@@ -3,7 +3,7 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import pool from '../database/db.js';
-import authenticateToken from '../../middleware/verifyToken.js';
+import authenticateToken from '../middleware/verifyToken.js';
 
 const router = express.Router();
 const SECRET_KEY = process.env.JWT_SECRET || 'selininSirri123';
@@ -23,7 +23,7 @@ router.post('/api/register', async (req, res) => {
     }
 
     const hashed = bcrypt.hashSync(password, 10);
-    await pool.query('INSERT INTO teachers (email, password, full_name) VALUES ($1, $2, $3)', [email, hashed, fullName]);
+    await pool.query('INSERT INTO teachers (email, password, full_name, is_approved) VALUES ($1, $2, $3, false)', [email, hashed, fullName]);
     res.json({ message: 'Kayıt başarılı' });
   } catch (err) {
     console.error(err);
@@ -41,6 +41,11 @@ router.post('/api/login', async (req, res) => {
     if (!user || !bcrypt.compareSync(password, user.password)) {
       return res.status(401).json({ message: 'Geçersiz e-posta veya şifre.' });
     }
+
+    if (!user.is_approved) {
+      return res.status(403).json({ message: 'Hesabınız onaylanmadı. Lütfen admin tarafından onaylanmayı bekleyin.' });
+    }
+
     const token = jwt.sign({ email: user.email }, SECRET_KEY, { expiresIn: '2h' });
     res.json({ message: 'Giriş başarılı', token, fullName: user.full_name });
   } catch (err) {
@@ -62,20 +67,21 @@ router.put('/api/teachers/update-name', authenticateToken, async (req, res) => {
     console.error("İsim güncelleme hatası:", err);
     res.status(500).json({ message: 'İsim güncellenemedi.' });
   }
-
-  router.put('/api/teachers/update-password', authenticateToken, async (req, res) => {
-    const { password } = req.body;
-  
-    try {
-      const hashed = bcrypt.hashSync(password, 10);
-      await pool.query('UPDATE teachers SET password = $1 WHERE email = $2', [hashed, req.user.email]);
-      res.json({ message: 'Şifre başarıyla güncellendi.' });
-    } catch (err) {
-      console.error("Şifre güncelleme hatası:", err);
-      res.status(500).json({ message: 'Şifre güncellenemedi.' });
-    }
-  });  
 });
+
+router.put('/api/teachers/update-password', authenticateToken, async (req, res) => {
+  const { password } = req.body;
+
+  try {
+    const hashed = bcrypt.hashSync(password, 10);
+    await pool.query('UPDATE teachers SET password = $1 WHERE email = $2', [hashed, req.user.email]);
+    res.json({ message: 'Şifre başarıyla güncellendi.' });
+  }catch (err) {
+    console.error("Şifre güncelleme hatası:", err);
+    res.status(500).json({ message: 'Şifre güncellenemedi.' });
+  }
+});  
+
 
 
 export default router;

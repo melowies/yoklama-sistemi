@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS teachers (
   id SERIAL PRIMARY KEY,
   email VARCHAR(255) UNIQUE NOT NULL,
   password TEXT NOT NULL,
-  full_name VARCHAR(255)
+  full_name VARCHAR(255),
   is_approved BOOLEAN DEFAULT FALSE
 );
 
@@ -23,3 +23,15 @@ CREATE TABLE IF NOT EXISTS students (
   is_approved BOOLEAN DEFAULT false,
   course_id INTEGER REFERENCES courses(id) ON DELETE CASCADE
 );
+
+CREATE TABLE admins (
+  id SERIAL PRIMARY KEY,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL
+);
+
+-- Veritabanını sıfırlamak için kullanılabilir
+-- TRUNCATE TABLE teachers CASCADE;
+-- TRUNCATE TABLE courses CASCADE; 
+-- TRUNCATE TABLE students CASCADE;
+-- TRUNCATE TABLE admins CASCADE;

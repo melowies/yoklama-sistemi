@@ -7,6 +7,10 @@ import CoursePage from "./pages/CoursePage";
 import CheckinPage from "./pages/CheckinPage";
 import PendingApprovals from "./pages/PendingApprovals";
 import PrivateRoute from "./components/PrivateRoute";
+import AdminRoute from "./components/AdminRoute";
+import AdminPanel from "./pages/AdminPanel";
+import AdminLoginPage from "./pages/AdminLoginPage";
+import CreateAdmin from './pages/CreateAdmin';
 
 function App() {
   return (
@@ -17,7 +21,7 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
 
-        {/* Korumalı rotalar */}
+        {/* Öğretmen korumalı rotaları */}
         <Route element={<PrivateRoute />}>
           <Route path="/dashboard" element={<TeacherDashboard />} />
           <Route path="/course/:courseCode" element={<CoursePage />} />
@@ -25,7 +29,14 @@ function App() {
           <Route path="/checkin/:code" element={<CheckinPage />} />
           <Route path="/course/:code/pending" element={<PendingApprovals />} />
         </Route>
-
+        
+        {/* Admin rotaları */}
+        <Route path="/admin/login" element={<AdminLoginPage />} />
+        <Route path="/admin/create-admin" element={<CreateAdmin />} />
+        <Route element={<AdminRoute />}>
+        <Route path="/admin" element={<AdminPanel />} />
+        </Route>
+        
         {/* Tanımsız rotalar için yönlendirme */}
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>

@@ -7,9 +7,9 @@ const { Pool } = pg;
 const pool = new Pool({
   host: 'localhost',
   port: 5432,
-  user: process.env.PG_USER,
-  password: 'root',
-  database: process.env.PG_DB,
+  user: process.env.PG_USER || 'postgres',
+  password: process.env.PG_PASS || 'postgres',
+  database: process.env.PG_DB || 'yoklama_sistemi',
 });
 
 export default pool;

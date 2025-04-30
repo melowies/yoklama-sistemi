@@ -3,8 +3,9 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import verifyToken from './middleware/verifyToken.js';
 
+import verifyToken from './src/middleware/verifyToken.js';
+import adminRoutes from './src/routes/admin.js';
 import checkinRouter from './src/routes/checkin.js';
 import filesRouter from './src/routes/files.js';
 import coursesRouter from './src/routes/courses.js';
@@ -43,6 +44,7 @@ app.use(filesRouter);
 app.use(coursesRouter);
 app.use(authRouter);
 app.use(studentsRouter);
+app.use(adminRoutes);
 
 app.listen(port, () => {
   console.log(`✅ Sunucu ${port} portunda çalışıyor`);
