@@ -87,7 +87,6 @@ router.post("/api/courses", async (req, res) => {
 });
 
 // DELETE /api/courses/:id → Ders silme
-// DELETE /api/courses/:id → Ders silme
 router.delete("/api/courses/:id", async (req, res) => {
   const courseId = req.params.id;
   const teacherEmail = req.query.email;
@@ -172,8 +171,8 @@ router.delete("/api/courses/:id", async (req, res) => {
   }
 });
 
-// GET /api/courses/:code/files → Get course attendance files
-router.get("/api/courses/:code/files", async (req, res) => {
+// GET /api/courses/:courseCode/files → Get course attendance files
+router.get("/api/courses/:courseCode/files", async (req, res) => {
   const courseCode = req.params.code;
   
   try {
@@ -204,8 +203,8 @@ router.get("/api/courses/:code/files", async (req, res) => {
   }
 });
 
-// GET /api/courses/:code/pending-students → Get pending students
-router.get("/api/courses/:code/pending-students", async (req, res) => {
+// GET /api/courses/:code/pending → Get pending students
+router.get("/api/course/:courseCode/pending", async (req, res) => {
   const courseCode = req.params.code;
   
   try {
@@ -234,7 +233,7 @@ router.get("/api/courses/:code/pending-students", async (req, res) => {
   }
 });
 
-router.get("/api/courses/:code/export", async (req, res) => {
+router.get("/api/courses/:courseCode/export", async (req, res) => {
   const courseCode = req.params.code;
 
   try {

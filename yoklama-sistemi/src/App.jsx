@@ -20,14 +20,13 @@ function App() {
         <Route path="/" element={<LoginPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/checkin/:courseCode" element={<CheckinPage />} />
 
         {/* Öğretmen korumalı rotaları */}
         <Route element={<PrivateRoute />}>
           <Route path="/dashboard" element={<TeacherDashboard />} />
           <Route path="/course/:courseCode" element={<CoursePage />} />
-          <Route path="/course/:code" element={<CoursePage />} />
-          <Route path="/checkin/:code" element={<CheckinPage />} />
-          <Route path="/course/:code/pending" element={<PendingApprovals />} />
+          <Route path="/course/:courseCode/pending" element={<PendingApprovals />} />
         </Route>
         
         {/* Admin rotaları */}

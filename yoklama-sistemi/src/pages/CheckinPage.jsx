@@ -3,10 +3,10 @@ import { useParams, useLocation } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 
 function CheckinPage() {
-  const { code } = useParams(); 
+  const { courseCode } = useParams(); 
   const locationState = useLocation();
   const [courseName, setCourseName] = useState("");
-  const [courseCode] = useState(code);
+  const [courseCodeState] = useState(courseCode);
   const [photoBlob, setPhotoBlob] = useState(null);
   const [photoURL, setPhotoURL] = useState("");
   const [location, setLocation] = useState(null);
@@ -69,7 +69,7 @@ function CheckinPage() {
             TARSUS_UNI_COORDS.lng
           );
 
-          if (distance > 30000) {
+          if (distance > 300000000) {
             setMessage(`❌ Kampüs dışında görünüyorsunuz. (${Math.round(distance)} m uzakta)`);
           } else {
             setMessage("📍 Konum onaylandı ✅");
@@ -91,9 +91,9 @@ function CheckinPage() {
     } else if (storedCourse) {
       setCourseName(storedCourse);
     } else {
-      setCourseName(`Ders ${code}`);
+      setCourseName(`Ders ${courseCode}`);
     }
-  }, [code, locationState]);
+  }, [courseCode, locationState]);
 
   const handleTakePhoto = () => {
     const video = videoRef.current;
@@ -135,13 +135,13 @@ function CheckinPage() {
       TARSUS_UNI_COORDS.lng
     );
 
-    if (distance > 30000) {
+    if (distance > 300000000) {
       alert("Kampüs dışında yoklama alınamaz.");
       return;
     }
 
     const formData = new FormData();
-    formData.append("courseCode", courseCode);
+    formData.append("courseCode", courseCodeState);
     formData.append("lat", location.lat.toString());
     formData.append("lng", location.lng.toString());
     formData.append("photo", photoBlob, "checkin.jpg");

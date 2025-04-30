@@ -4,7 +4,7 @@ import QRCode from "react-qr-code";
 import { useState, useEffect } from "react";
 
 function CoursePage() {
-  const { code } = useParams();
+  const { courseCode } = useParams();
   const locationState = useLocation();
   const [attendanceFiles, setAttendanceFiles] = useState([]);
   const [courseName, setCourseName] = useState("");
@@ -18,16 +18,16 @@ function CoursePage() {
     } else if (storedCourse) {
       setCourseName(storedCourse);
     } else {
-      setCourseName(`Ders ${code}`);
+      setCourseName(`Ders ${courseCode}`);
     }
-  }, [code, locationState]);
+  }, [courseCode, locationState]);
 
   useEffect(() => {
-    fetch(`http://localhost:5000/api/courses/${code}/files`)
+    fetch(`http://localhost:5000/api/courses/${courseCode}/files`)
       .then((res) => res.json())
       .then((data) => setAttendanceFiles(data.files || []))
       .catch(() => setAttendanceFiles([]));
-  }, [code]);
+  }, [courseCode]);
 
   return (
     <div className="min-h-screen bg-white text-black p-6 flex flex-col items-center">
@@ -35,11 +35,11 @@ function CoursePage() {
       <p className="mb-4">Öğrenciler aşağıdaki QR kodu okutarak yoklama verebilir.</p>
 
       <div className="bg-white p-4 rounded shadow mb-6">
-        <QRCode value={`http://localhost:5173/checkin/${code}?t=${Date.now()}`} />
+        <QRCode value={`http://localhost:5173/checkin/${courseCode}?t=${Date.now()}`} />
       </div>
 
       <Link
-        to={`/course/${code}/pending`}
+        to={`/course/${courseCode}/pending`}
         className="mb-6 text-blue-600 underline hover:text-blue-800"
       >
         👩‍🎓 Bekleyen Başvuruları Gör

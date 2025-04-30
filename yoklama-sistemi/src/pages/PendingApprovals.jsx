@@ -3,14 +3,14 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
 function PendingApprovals() {
-  const { code } = useParams();
+  const { courseCode } = useParams();
   const [students, setStudents] = useState([]);
 
   useEffect(() => {
-    fetch(`http://localhost:5000/api/courses/${code}/pending-students`)
+    fetch(`http://localhost:5000/api/students/${courseCode}`)
       .then(res => res.json())
-      .then(data => setStudents(data.students || []));
-  }, [code]);
+      .then(data => setStudents(data.pendingStudents || []));
+  }, [courseCode]);
 
   const handleApprove = async (studentId, imageName) => {
     const res = await fetch(`http://localhost:5000/api/students/${studentId}/approve`, {
@@ -30,7 +30,7 @@ function PendingApprovals() {
     const res = await fetch(`http://localhost:5000/api/students/${studentId}/reject`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ image: imageName, courseCode: code })
+      body: JSON.stringify({ image: imageName, courseCode: courseCode })
     });
 
     const data = await res.json();
@@ -40,7 +40,7 @@ function PendingApprovals() {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">{code} - Bekleyen Başvurular</h1>
+      <h1 className="text-2xl font-bold mb-4">{courseCode} - Bekleyen Başvurular</h1>
       {students.length === 0 ? (
         <p>Bekleyen başvuru yok ✅</p>
       ) : (
@@ -48,7 +48,7 @@ function PendingApprovals() {
           {students.map((student) => (
             <div key={student.id} className="border p-4 rounded shadow text-center">
                 <img
-                    src={`http://localhost:5173/uploads/face_data/${code}-pending/${student.face_image}`}                  
+                    src={`http://localhost:5000/uploads/face_data/${courseCode}-pending/${student.face_image}`}                  
                     alt={student.name}
                     className="w-48 h-48 object-cover mx-auto rounded mb-2"
                  />
