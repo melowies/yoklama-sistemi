@@ -1,10 +1,11 @@
 //C:\Users\selin\OneDrive\Masaüstü\trae\yoklama-sistemi\src\pages\CheckinPage.jsx
-import { useParams, useLocation } from "react-router-dom";
+import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 
 function CheckinPage() {
   const { courseCode } = useParams(); 
   const locationState = useLocation();
+  const navigate = useNavigate();
   const [courseName, setCourseName] = useState("");
   const [courseCodeState] = useState(courseCode);
   const [photoBlob, setPhotoBlob] = useState(null);
@@ -14,8 +15,12 @@ function CheckinPage() {
   const [studentName, setStudentName] = useState("");
   const [studentNo, setStudentNo] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [sessionExpired, setSessionExpired] = useState(false);
+  const [sessionId, setSessionId] = useState("");
+  const [expiryTime, setExpiryTime] = useState(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const timerRef = useRef(null);
 
   const TARSUS_UNI_COORDS = {
     lat: 36.917870,
@@ -35,9 +40,48 @@ function CheckinPage() {
     return R * c * 1000;
   };
 
+  // URL'den session ve expiry parametrelerini al
   useEffect(() => {
-    startCamera();
+    const searchParams = new URLSearchParams(window.location.search);
+    const session = searchParams.get("session");
+    const expiry = searchParams.get("expiry");
+    
+    if (session && expiry) {
+      setSessionId(session);
+      setExpiryTime(Number(expiry));
+      
+      // Süre kontrolü yap
+      const checkExpiry = () => {
+        const now = Date.now();
+        if (now > Number(expiry)) {
+          setSessionExpired(true);
+          setMessage("❌ Bu QR kodunun süresi dolmuş. Lütfen öğretmeninizden yeni bir QR kodu oluşturmasını isteyin.");
+          clearInterval(timerRef.current);
+        }
+      };
+      
+      // İlk kontrol
+      checkExpiry();
+      
+      // Periyodik kontrol
+      timerRef.current = setInterval(checkExpiry, 1000);
+      
+      return () => {
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+        }
+      };
+    } else {
+      setMessage("❌ Geçersiz QR kod. Lütfen öğretmeninizden yeni bir QR kodu oluşturmasını isteyin.");
+      setSessionExpired(true);
+    }
   }, []);
+  
+  useEffect(() => {
+    if (!sessionExpired) {
+      startCamera();
+    }
+  }, [sessionExpired]);
 
   const startCamera = () => {
     navigator.mediaDevices
@@ -123,6 +167,11 @@ function CheckinPage() {
   };
 
   const handleSubmit = async () => {
+    if (sessionExpired) {
+      alert("Bu QR kodunun süresi dolmuş. Lütfen öğretmeninizden yeni bir QR kodu oluşturmasını isteyin.");
+      return;
+    }
+    
     if (!photoBlob || !location || !studentName || !studentNo) {
       alert("Lütfen tüm alanları doldurun ve fotoğraf çekin.");
       return;
@@ -140,6 +189,13 @@ function CheckinPage() {
       return;
     }
 
+    // Süre kontrolü yap
+    if (expiryTime && Date.now() > expiryTime) {
+      setSessionExpired(true);
+      setMessage("❌ Bu QR kodunun süresi dolmuş. Lütfen öğretmeninizden yeni bir QR kodu oluşturmasını isteyin.");
+      return;
+    }
+
     const formData = new FormData();
     formData.append("courseCode", courseCodeState);
     formData.append("lat", location.lat.toString());
@@ -147,6 +203,8 @@ function CheckinPage() {
     formData.append("photo", photoBlob, "checkin.jpg");
     formData.append("name", studentName);
     formData.append("student_no", studentNo);
+    formData.append("sessionId", sessionId);
+    formData.append("expiryTime", expiryTime ? expiryTime.toString() : "");
 
     try {
       const response = await fetch("http://localhost:5000/api/checkin", {
@@ -167,12 +225,24 @@ function CheckinPage() {
     }
   };
 
-  const isFormValid = photoBlob && location && studentName && studentNo && !submitted;
+  const isFormValid = photoBlob && location && studentName && studentNo && !submitted && !sessionExpired;
 
   return (
     <div className="min-h-screen bg-white text-black flex flex-col items-center justify-center p-6">
       <h1 className="text-2xl font-bold mb-4">Yoklama - {courseName}</h1>
       <p className="mb-2">Kamera aç, konum ver ve bilgileri doldur.</p>
+      
+      {sessionExpired && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          <p>Bu QR kodunun süresi dolmuş.</p>
+          <button 
+            onClick={() => navigate(-1)} 
+            className="mt-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          >
+            Geri Dön
+          </button>
+        </div>
+      )}
 
       {photoURL ? (
         <img
