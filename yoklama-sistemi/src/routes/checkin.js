@@ -22,6 +22,17 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
+const deleteUploadedFile = (filePath) => {
+  if (filePath && fs.existsSync(filePath)) {
+    try {
+      fs.unlinkSync(filePath);
+      console.log(`✅ Dosya silindi: ${filePath}`);
+    } catch (error) {
+      console.error(`❌ Dosya silinirken hata oluştu: ${error.message}`);
+    }
+  }
+};
+
 router.post("/api/checkin", upload.single("photo"), async (req, res) => {
   const { name, student_no, lat, lng, courseCode } = req.body;
   const photoPath = req.file?.path;
@@ -36,6 +47,10 @@ router.post("/api/checkin", upload.single("photo"), async (req, res) => {
   });
 
   if (!name || !student_no || !lat || !lng || !courseCode || !photoPath) {
+    // Eksik bilgi durumunda yüklenen dosyayı sil
+    if (photoPath) {
+      deleteUploadedFile(photoPath);
+    }
     return res.status(400).json({ message: "Eksik bilgi gönderildi." });
   }
 
@@ -46,6 +61,8 @@ router.post("/api/checkin", upload.single("photo"), async (req, res) => {
     );
 
     if (course.rows.length === 0) {
+      // Ders bulunamadığında yüklenen dosyayı sil
+      deleteUploadedFile(photoPath);
       return res.status(404).json({ message: "Ders bulunamadı." });
     }
 
@@ -57,6 +74,9 @@ router.post("/api/checkin", upload.single("photo"), async (req, res) => {
     );
 
     if (exists.rows.length > 0) {
+      // Öğrenci zaten varsa yüklenen dosyayı sil
+      deleteUploadedFile(photoPath);
+      
       if (exists.rows[0].is_approved) {
         return res.status(400).json({ message: "Bu öğrenci zaten onaylanmış." });
       } else {
@@ -71,6 +91,8 @@ router.post("/api/checkin", upload.single("photo"), async (req, res) => {
 
     res.json({ success: true, message: "Başvuru başarıyla alındı. Onay bekliyor." });
   } catch (err) {
+    // Hata durumunda yüklenen dosyayı sil
+    deleteUploadedFile(photoPath);
     console.error("Hata:", err);
     res.status(500).json({ message: "Sunucu hatası." });
   }
