@@ -1,5 +1,6 @@
 //C:\Users\selin\OneDrive\Masaüstü\yoklama-sistemi\yoklama-sistemi\src\pages\AdminPanel.jsx
 import { useState, useEffect } from "react";
+import Navbar from "../components/Navbars";
 
 function AdminPanel() {
   const [teachers, setTeachers] = useState([]);
@@ -74,36 +75,39 @@ function AdminPanel() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-black">
-      <h2 className="text-xl font-bold mb-4">Öğretmen Onayları</h2>
-      {teachers.length === 0 ? (
-        <p>Onay bekleyen öğretmen yok.</p>
-      ) : (
-        <ul>
-          {teachers.map((teacher) => (
-            <li key={teacher.id} className="mb-3">
-              <div className="flex justify-between">
-                <span>{teacher.full_name} ({teacher.email})</span>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleApprove(teacher.id)}
-                    className="bg-green-500 text-white py-1 px-3 rounded hover:bg-green-600"
-                  >
-                    Onayla
-                  </button>
-                  <button
-                    onClick={() => handleReject(teacher.id)}
-                    className="bg-red-500 text-white py-1 px-3 rounded hover:bg-red-600"
-                  >
-                    Reddet
-                  </button>
+    <>
+      <Navbar adminMode={true} />
+      <div className="min-h-screen bg-white text-black">
+        <h2 className="text-xl font-bold mb-4">Öğretmen Onayları</h2>
+        {teachers.length === 0 ? (
+          <p>Onay bekleyen öğretmen yok.</p>
+        ) : (
+          <ul>
+            {teachers.map((teacher) => (
+              <li key={teacher.id} className="mb-3">
+                <div className="flex justify-between">
+                  <span>{teacher.full_name} ({teacher.email})</span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleApprove(teacher.id)}
+                      className="bg-green-500 text-white py-1 px-3 rounded hover:bg-green-600"
+                    >
+                      Onayla
+                    </button>
+                    <button
+                      onClick={() => handleReject(teacher.id)}
+                      className="bg-red-500 text-white py-1 px-3 rounded hover:bg-red-600"
+                    >
+                      Reddet
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </>
   );
 }
 

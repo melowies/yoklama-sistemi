@@ -30,11 +30,11 @@ function App() {
         </Route>
         
         {/* Admin rotaları */}
+        <Route element={<AdminRoute />}>
+          <Route path="/admin" element={<AdminPanel />} />
+        </Route>
         <Route path="/admin/login" element={<AdminLoginPage />} />
         <Route path="/admin/create-admin" element={<CreateAdmin />} />
-        <Route element={<AdminRoute />}>
-        <Route path="/admin" element={<AdminPanel />} />
-        </Route>
         
         {/* Tanımsız rotalar için yönlendirme */}
         <Route path="*" element={<Navigate to="/login" />} />

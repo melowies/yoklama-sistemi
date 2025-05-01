@@ -1,12 +1,16 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 
-function Navbar({ fullName, setFullName }) {
+function Navbar({ fullName, setFullName, adminMode }) {
   const navigate = useNavigate();
   const [showSettings, setShowSettings] = useState(false);
-  
 
   const handleLogout = async () => {
+    if (adminMode) {
+      localStorage.removeItem("adminToken");
+      navigate("/admin/login");
+      return;
+    }
     try {
       const token = localStorage.getItem("token");
       await fetch("http://localhost:5000/api/teachers/logout", {
@@ -23,11 +27,11 @@ function Navbar({ fullName, setFullName }) {
       navigate("/login");
     }
   };
-  
+
   const handleChangeName = async () => {
+    if (adminMode) return;
     const newName = prompt("Yeni isminizi giriniz:");
     if (!newName) return;
-  
     try {
       const token = localStorage.getItem("token");
       const res = await fetch("http://localhost:5000/api/teachers/update-name", {
@@ -38,7 +42,6 @@ function Navbar({ fullName, setFullName }) {
         },
         body: JSON.stringify({ fullName: newName }),
       });
-  
       const data = await res.json();
       if (res.ok) {
         localStorage.setItem("fullName", data.fullName);
@@ -52,10 +55,9 @@ function Navbar({ fullName, setFullName }) {
       alert("İsim güncellenemedi.");
     }
   };
-  
-  
 
   const handleChangePassword = async () => {
+    if (adminMode) return;
     const newPassword = prompt("Yeni şifrenizi giriniz:");
     if (newPassword) {
       try {
@@ -79,19 +81,20 @@ function Navbar({ fullName, setFullName }) {
       }
     }
   };
-  
 
   return (
     <div className="flex justify-between items-center bg-black text-white px-6 py-3 shadow-md">
-      <div className="text-lg font-semibold">{fullName}</div>
+      <div className="text-lg font-semibold">
+        {adminMode ? "Admin Paneli" : fullName}
+      </div>
       <div className="relative">
         <button onClick={() => setShowSettings(!showSettings)} className="bg-gray-800 px-4 py-2 rounded hover:bg-gray-700">
           Ayarlar
         </button>
         {showSettings && (
           <div className="absolute right-0 mt-2 w-48 bg-white text-black rounded shadow-lg z-50">
-            <button onClick={handleChangeName} className="w-full px-4 py-2 hover:bg-gray-100 text-left">İsmi Değiştir</button>
-            <button onClick={handleChangePassword} className="w-full px-4 py-2 hover:bg-gray-100 text-left">Şifreyi Değiştir</button>
+            {!adminMode && <button onClick={handleChangeName} className="w-full px-4 py-2 hover:bg-gray-100 text-left">İsmi Değiştir</button>}
+            {!adminMode && <button onClick={handleChangePassword} className="w-full px-4 py-2 hover:bg-gray-100 text-left">Şifreyi Değiştir</button>}
             <button onClick={handleLogout} className="w-full px-4 py-2 hover:bg-gray-100 text-left text-red-600">Çıkış Yap</button>
           </div>
         )}
