@@ -1,4 +1,4 @@
-//C:\Users\selin\OneDrive\Masaüstü\yoklama-sistemi\yoklama-sistemi\middleware\verifyToken.js
+//C:\Users\selin\OneDrive\Masaüstü\yoklama-sistemi\yoklama-sistemi\src\middleware\verifyToken.js
 import jwt from "jsonwebtoken";
 
 const verifyToken = (req, res, next) => {
@@ -11,7 +11,8 @@ const verifyToken = (req, res, next) => {
   const token = authHeader.split(" ")[1];
 
   try {
-    const decoded = jwt.verify(token, "selininSirri123");
+    const SECRET_KEY = process.env.JWT_SECRET || "selininSirri123";
+    const decoded = jwt.verify(token, SECRET_KEY);
     req.user = decoded; // { email: ... }
     next();
   } catch (error) {

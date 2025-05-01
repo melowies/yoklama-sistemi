@@ -1,4 +1,4 @@
-// C:\Users\selin\OneDrive\Masaüstü\trae\yoklama-sistemi\src\server.js
+// C:\Users\selin\OneDrive\Masaüstü\yoklama-sistemi\yoklama-sistemi\server.js
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
@@ -31,7 +31,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ✅ Static upload dosyalarını sunmak için
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 app.get('/api/profile', verifyToken, (req, res) => {
   const email = req.user.email;

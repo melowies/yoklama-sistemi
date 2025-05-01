@@ -1,4 +1,4 @@
-//C:\Users\selin\OneDrive\Masaüstü\trae\yoklama-sistemi\src\routes\courses.js
+//C:\Users\selin\OneDrive\Masaüstü\yoklama-sistemi\yoklama-sistemi\src\routes\courses.js
 import express from "express";
 import pool from "../database/db.js"; 
 import fs from 'fs';
@@ -127,8 +127,8 @@ router.delete("/api/courses/:id", async (req, res) => {
     const courseCode = courseResult.rows[0].code;
 
     // Ders klasörlerini sil
-    const pendingDir = path.join("uploads", "face_data", `${courseCode}-pending`);
-    const approvedDir = path.join("uploads", "face_data", `${courseCode}-approved`);
+    const pendingDir = path.join(process.cwd(), "uploads", "face_data", `${courseCode}-pending`);
+    const approvedDir = path.join(process.cwd(), "uploads", "face_data", `${courseCode}-approved`);
 
     console.log("Silinecek klasörler:", { pendingDir, approvedDir });
 
@@ -171,9 +171,9 @@ router.delete("/api/courses/:id", async (req, res) => {
   }
 });
 
-// GET /api/courses/:courseCode/files → Get course attendance files
-router.get("/api/courses/:courseCode/files", async (req, res) => {
-  const courseCode = req.params.code;
+// GET /api/courses/:id/files → Get course attendance files
+router.get("/api/courses/:id/files", async (req, res) => {
+  const courseCode = req.params.id;
   
   try {
     // Validate course code
@@ -187,7 +187,7 @@ router.get("/api/courses/:courseCode/files", async (req, res) => {
     }
     
     // Find attendance files
-    const folder = path.join("uploads", courseCode);
+    const folder = path.join(process.cwd(), "uploads", courseCode);
     let files = [];
     
     if (fs.existsSync(folder)) {

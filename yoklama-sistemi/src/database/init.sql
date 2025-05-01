@@ -17,11 +17,12 @@ CREATE TABLE IF NOT EXISTS courses (
 CREATE TABLE IF NOT EXISTS students (
   id SERIAL PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
-  student_no VARCHAR(50) UNIQUE NOT NULL,
+  student_no VARCHAR(50) NOT NULL,
   email VARCHAR(255),
   face_image TEXT,
   is_approved BOOLEAN DEFAULT false,
-  course_id INTEGER REFERENCES courses(id) ON DELETE CASCADE
+  course_id INTEGER REFERENCES courses(id) ON DELETE CASCADE,
+  UNIQUE(student_no, course_id)
 );
 
 CREATE TABLE admins (

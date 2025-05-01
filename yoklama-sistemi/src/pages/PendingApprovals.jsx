@@ -48,7 +48,7 @@ function PendingApprovals() {
           {students.map((student) => (
             <div key={student.id} className="border p-4 rounded shadow text-center">
                 <img
-                    src={`http://localhost:5000/uploads/face_data/${courseCode}-pending/${student.face_image}`}                  
+                    src={`http://localhost:5000/uploads/face_data/${student.face_image}`}                  
                     alt={student.name}
                     className="w-48 h-48 object-cover mx-auto rounded mb-2"
                  />

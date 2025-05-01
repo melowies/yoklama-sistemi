@@ -1,4 +1,4 @@
-// C:\Users\selin\OneDrive\Masaüstü\trae\yoklama-sistemi\src\routes\checkin.js
+// C:\Users\selin\OneDrive\Masaüstü\yoklama-sistemi\yoklama-sistemi\src\routes\checkin.js
 import express from "express";
 import multer from "multer";
 import fs from "fs";
@@ -10,7 +10,7 @@ const router = express.Router();
 const storage = multer.diskStorage({
   destination: async (req, file, cb) => {
     const { courseCode } = req.body;
-    const folder = path.join("uploads", "face_data", `${courseCode}-pending`);
+    const folder = path.join(process.cwd(), "uploads", "face_data", `${courseCode}-pending`);
     if (!fs.existsSync(folder)) fs.mkdirSync(folder, { recursive: true });
     cb(null, folder);
   },
@@ -23,13 +23,17 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 const deleteUploadedFile = (filePath) => {
-  if (filePath && fs.existsSync(filePath)) {
-    try {
+  if (!filePath) return;
+  
+  try {
+    if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
       console.log(`✅ Dosya silindi: ${filePath}`);
-    } catch (error) {
-      console.error(`❌ Dosya silinirken hata oluştu: ${error.message}`);
+    } else {
+      console.log(`⚠️ Dosya bulunamadı: ${filePath}`);
     }
+  } catch (error) {
+    console.error(`❌ Dosya silinirken hata oluştu: ${error.message}`);
   }
 };
 
@@ -68,6 +72,7 @@ router.post("/api/checkin", upload.single("photo"), async (req, res) => {
 
     const courseId = course.rows[0].id;
 
+    // Öğrenci numarasının benzersiz olup olmadığını kontrol et
     const exists = await pool.query(
       "SELECT * FROM students WHERE student_no = $1 AND course_id = $2",
       [student_no, courseId]
@@ -84,9 +89,12 @@ router.post("/api/checkin", upload.single("photo"), async (req, res) => {
       }
     }
 
+    // Dosya yolunu veritabanına kaydetmeden önce düzgün formatta hazırla
+    const relativeFilePath = `${courseCode}-pending/${req.file.filename}`;
+    
     await pool.query(
       "INSERT INTO students (name, student_no, course_id, face_image, is_approved) VALUES ($1, $2, $3, $4, false)",
-      [name, student_no, courseId, req.file.filename]
+      [name, student_no, courseId, relativeFilePath]
     );
 
     res.json({ success: true, message: "Başvuru başarıyla alındı. Onay bekliyor." });
