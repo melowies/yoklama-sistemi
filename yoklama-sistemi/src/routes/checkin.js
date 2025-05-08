@@ -4,7 +4,6 @@ import multer from "multer";
 import fs from "fs";
 import path from "path";
 import pool from "../database/db.js";
-
 const router = express.Router();
 
 const storage = multer.diskStorage({
