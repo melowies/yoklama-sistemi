@@ -142,15 +142,22 @@ function CoursePage() {
               return (
                 <li key={index} className="flex items-center justify-between border p-2 rounded shadow-sm">
                   <span className="font-medium">{displayName}</span>
-                  <a
-                    href={`http://localhost:5000/uploads/${file}`}
+                  <button
+                    onClick={() => {
+                      const link = document.createElement('a');
+                      // Dosya yolunu doğru şekilde oluştur, ders kodunu da ekle
+                      link.href = `http://localhost:5000/uploads/${courseCode}/${file}`;
+                      // Dosya adını doğru şekilde al
+                      const filename = file;
+                      link.setAttribute('download', filename);
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    }}
                     className="text-blue-600 underline hover:text-blue-800 text-sm"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    download
                   >
                     Excel dosyasını indir
-                  </a>
+                  </button>
                 </li>
               );
             })
