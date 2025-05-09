@@ -5,10 +5,8 @@ import fs from "fs";
 import path from "path";
 import xlsx from "xlsx";
 
-// Utility function for consistent file path creation
 const getFilePath = (...parts) => path.join(process.cwd(), ...parts);
 
-// Utility function for safe file operations
 const safeFileOperation = (operation, errorMessage) => {
   try {
     return operation();
@@ -29,7 +27,6 @@ router.post("/api/students", async (req, res) => {
   }
 
   try {
-    // Öğretmen doğrulama
     const teacher = await pool.query("SELECT id FROM teachers WHERE email = $1", [teacher_email]);
     if (teacher.rows.length === 0) {
       console.log(`⚠️ Öğretmen bulunamadı: ${teacher_email}`);
@@ -38,7 +35,6 @@ router.post("/api/students", async (req, res) => {
 
     const teacherId = teacher.rows[0].id;
 
-    // Ders doğrulama
     const course = await pool.query(
       "SELECT id, code FROM courses WHERE name = $1 AND teacher_id = $2",
       [course_name, teacherId]
@@ -51,7 +47,6 @@ router.post("/api/students", async (req, res) => {
     const courseId = course.rows[0].id;
     const courseCode = course.rows[0].code;
 
-    // Mevcut öğrenci kontrolü
     const existing = await pool.query(
       "SELECT * FROM students WHERE student_no = $1 AND course_id = $2",
       [student_no, courseId]
@@ -64,7 +59,6 @@ router.post("/api/students", async (req, res) => {
       return res.status(400).json({ message: msg });
     }
 
-    // Klasör oluşturma
     const pendingDir = getFilePath("uploads", "face_data", `${courseCode}-pending`);
     if (!fs.existsSync(pendingDir)) {
       safeFileOperation(
@@ -76,7 +70,6 @@ router.post("/api/students", async (req, res) => {
     let fileName = null;
     let dbImagePath = null;
 
-    // Fotoğraf kaydetme
     if (face_image?.startsWith("data:image")) {
       try {
         const base64Data = face_image.replace(/^data:image\/\w+;base64,/, "");
@@ -87,11 +80,9 @@ router.post("/api/students", async (req, res) => {
         console.log(`✅ Fotoğraf kaydedildi: ${fileName}`);
       } catch (fileErr) {
         console.error(`❌ Fotoğraf kaydedilemedi: ${fileErr.message}`);
-        // Fotoğraf kaydedilemese bile devam et, sadece log tut
       }
     }
 
-    // Veritabanına kaydet
     await pool.query(
       "INSERT INTO students (name, student_no, email, face_image, course_id, is_approved) VALUES ($1, $2, $3, $4, $5, false)",
       [name, student_no, email, dbImagePath, courseId]
@@ -107,21 +98,18 @@ router.post("/api/students", async (req, res) => {
 // ✅ POST /api/students/:id/approve → Onayla ve Excel'e yaz
 router.post("/api/students/:id/approve", async (req, res) => {
   const studentId = req.params.id;
-  const { image } = req.body;
 
   if (!studentId) {
     return res.status(400).json({ message: "Öğrenci ID'si gerekli." });
   }
 
   try {
-    // Öğrenci bilgilerini al
     const result = await pool.query(
       "SELECT s.*, c.code FROM students s JOIN courses c ON s.course_id = c.id WHERE s.id = $1",
       [studentId]
     );
     
     if (result.rows.length === 0) {
-      console.log(`⚠️ Onaylanacak öğrenci bulunamadı: ID=${studentId}`);
       return res.status(404).json({ message: "Öğrenci bulunamadı." });
     }
 
@@ -131,31 +119,35 @@ router.post("/api/students/:id/approve", async (req, res) => {
     // 📂 Onaylı klasörü oluştur
     const approvedDir = getFilePath("uploads", "face_data", `${courseCode}-approved`);
     if (!fs.existsSync(approvedDir)) {
-      safeFileOperation(
+      const dirCreated = safeFileOperation(
         () => fs.mkdirSync(approvedDir, { recursive: true }),
         `Onaylı klasörü oluşturulamadı: ${approvedDir}`
       );
+      
+      if (!dirCreated && !fs.existsSync(approvedDir)) {
+        return res.status(500).json({ message: "Klasör oluşturulamadı. Lütfen daha sonra tekrar deneyin." });
+      }
     }
 
     let newImagePath = student.face_image;
 
-    // Fotoğrafı taşı
+    // Fotoğraf taşıma işlemi
     if (student.face_image) {
       try {
         const fileName = path.basename(student.face_image);
-        const oldPath = getFilePath("uploads", "face_data", `${courseCode}-pending`, fileName);
+        const oldPath = getFilePath("uploads", "face_data", student.face_image);
         const newPath = path.join(approvedDir, fileName);
 
         if (fs.existsSync(oldPath)) {
           fs.renameSync(oldPath, newPath);
           newImagePath = `${courseCode}-approved/${fileName}`;
-          console.log(`✅ Fotoğraf taşındı: ${oldPath} -> ${newPath}`);
         } else {
+          // Dosya bulunamadıysa, veritabanındaki yolu kullan
           console.log(`⚠️ Taşınacak fotoğraf bulunamadı: ${oldPath}`);
         }
       } catch (fileErr) {
         console.error(`❌ Fotoğraf taşıma hatası: ${fileErr.message}`);
-        // Fotoğraf taşınamazsa bile devam et
+        // Fotoğraf taşıma hatası olsa bile işleme devam et
       }
     }
 
@@ -166,16 +158,22 @@ router.post("/api/students/:id/approve", async (req, res) => {
     const courseDir = getFilePath("uploads", courseCode);
     
     if (!fs.existsSync(courseDir)) {
-      safeFileOperation(
+      const dirCreated = safeFileOperation(
         () => fs.mkdirSync(courseDir, { recursive: true }),
         `Excel klasörü oluşturulamadı: ${courseDir}`
       );
+      
+      if (!dirCreated && !fs.existsSync(courseDir)) {
+        // Excel klasörü oluşturulamadıysa bile öğrenciyi onaylayalım
+        console.error("Excel klasörü oluşturulamadı, ancak öğrenci onaylanacak.");
+      }
     }
     
+    // Excel işlemleri
+    let excelSuccess = false;
     const excelPath = path.join(courseDir, fileName);
-
-    // Excel dosyasını oku veya oluştur
     let data = [];
+    
     try {
       if (fs.existsSync(excelPath)) {
         const wb = xlsx.readFile(excelPath);
@@ -183,22 +181,20 @@ router.post("/api/students/:id/approve", async (req, res) => {
         data = ws;
       }
 
-      // Yeni veriyi ekle
       data.push({
         AdSoyad: student.name,
         Numara: student.student_no,
         Tarih: formattedDate,
       });
 
-      // Excel dosyasını yaz
       const wb = xlsx.utils.book_new();
       const ws = xlsx.utils.json_to_sheet(data);
       xlsx.utils.book_append_sheet(wb, ws, "Yoklama");
       xlsx.writeFile(wb, excelPath);
-      console.log(`✅ Excel dosyası güncellendi: ${excelPath}`);
+      excelSuccess = true;
     } catch (excelErr) {
       console.error(`❌ Excel işlemi hatası: ${excelErr.message}`);
-      // Excel hatası olsa bile veritabanı güncellemesine devam et
+      // Excel hatası olsa bile öğrenciyi onaylayalım
     }
 
     // ✅ Veritabanında güncelle
@@ -207,7 +203,11 @@ router.post("/api/students/:id/approve", async (req, res) => {
       [newImagePath, studentId]
     );
 
-    res.json({ message: "✅ Öğrenci onaylandı ve Excel'e eklendi." });
+    const message = excelSuccess 
+      ? "✅ Öğrenci onaylandı ve Excel'e eklendi." 
+      : "✅ Öğrenci onaylandı fakat Excel güncellenemedi.";
+      
+    res.json({ message });
   } catch (err) {
     console.error("Onaylama hatası:", err);
     res.status(500).json({ message: "Onaylama sırasında hata oluştu: " + (err.message || "Bilinmeyen hata") });
@@ -217,37 +217,33 @@ router.post("/api/students/:id/approve", async (req, res) => {
 // ❌ POST /api/students/:id/reject → Reddet ve sil
 router.post("/api/students/:id/reject", async (req, res) => {
   const studentId = req.params.id;
-  const { image, courseCode } = req.body;
 
-  if (!studentId || !courseCode) {
-    return res.status(400).json({ message: "Eksik bilgi gönderildi." });
+  if (!studentId) {
+    return res.status(400).json({ message: "Öğrenci ID'si gerekli." });
   }
 
   try {
-    // Önce öğrenci bilgilerini al (silmeden önce)
-    const studentInfo = await pool.query("SELECT face_image FROM students WHERE id = $1", [studentId]);
+    // Öğrenci ve ders bilgilerini al
+    const studentInfo = await pool.query(
+      "SELECT s.face_image, c.code FROM students s JOIN courses c ON s.course_id = c.id WHERE s.id = $1", 
+      [studentId]
+    );
     
     if (studentInfo.rows.length === 0) {
       return res.status(404).json({ message: "Öğrenci bulunamadı" });
     }
     
+    const { face_image, code: courseCode } = studentInfo.rows[0];
+    
     // Öğrenciyi veritabanından sil
     const result = await pool.query("DELETE FROM students WHERE id = $1", [studentId]);
 
     if (result.rowCount > 0) {
-      // Dosya yolunu belirle (image parametresi veya veritabanındaki değer kullanılarak)
-      let photoPath;
-      
-      if (image) {
-        photoPath = getFilePath("uploads", "face_data", `${courseCode}-pending`, image);
-      } else if (studentInfo.rows[0].face_image) {
-        // Veritabanından gelen tam yolu kullan
-        photoPath = getFilePath("uploads", "face_data", studentInfo.rows[0].face_image);
-      }
-      
-      // Dosyayı sil (eğer varsa)
-      if (photoPath) {
+      // Fotoğrafı sil (varsa)
+      if (face_image) {
         try {
+          const photoPath = getFilePath("uploads", "face_data", face_image);
+          
           if (fs.existsSync(photoPath)) {
             fs.unlinkSync(photoPath);
             console.log(`✅ Dosya silindi: ${photoPath}`);
@@ -256,6 +252,7 @@ router.post("/api/students/:id/reject", async (req, res) => {
           }
         } catch (error) {
           console.error(`❌ Dosya silinirken hata oluştu: ${error.message}`);
+          // Dosya silme hatası olsa bile işleme devam et
         }
       }
       
@@ -269,44 +266,6 @@ router.post("/api/students/:id/reject", async (req, res) => {
   }
 });
 
-
-// ✅ GET /api/students/:courseCode → Tüm öğrencileri getir
-router.get("/api/students/:courseCode", async (req, res) => {
-  const courseCode = req.params.courseCode;
-
-  if (!courseCode) {
-    return res.status(400).json({ message: "Ders kodu gerekli." });
-  }
-
-  try {
-    console.log(`📋 ${courseCode} dersinin öğrencileri getiriliyor...`);
-    
-    // Ders ID'sini bul
-    const result = await pool.query("SELECT id FROM courses WHERE code = $1", [courseCode]);
-    if (result.rows.length === 0) {
-      console.log(`⚠️ Ders bulunamadı: ${courseCode}`);
-      return res.status(404).json({ message: "Ders bulunamadı." });
-    }
-
-    const courseId = result.rows[0].id;
-
-    // Onaylı ve bekleyen öğrencileri paralel olarak getir
-    const [approved, pending] = await Promise.all([
-      pool.query("SELECT * FROM students WHERE course_id = $1 AND is_approved = true", [courseId]),
-      pool.query("SELECT * FROM students WHERE course_id = $1 AND is_approved = false", [courseId])
-    ]);
-
-    console.log(`✅ ${courseCode} dersi için ${approved.rows.length} onaylı, ${pending.rows.length} bekleyen öğrenci bulundu.`);
-
-    res.json({
-      approvedStudents: approved.rows,
-      pendingStudents: pending.rows
-    });
-  } catch (err) {
-    console.error(`❌ Öğrenci listesi getirme hatası (${courseCode}):`, err);
-    res.status(500).json({ message: "Sunucu hatası: " + (err.message || "Bilinmeyen hata") });
-  }
-});
 
 // Öğrenci arama endpoint'i
 router.get("/api/students/search/:courseCode", async (req, res) => {
@@ -336,6 +295,42 @@ router.get("/api/students/search/:courseCode", async (req, res) => {
   } catch (err) {
     console.error(`❌ Öğrenci arama hatası:`, err);
     res.status(500).json({ message: "Arama sırasında hata oluştu" });
+  }
+});
+
+// ✅ GET /api/students/:courseCode → Tüm öğrencileri getir
+router.get("/api/students/:courseCode", async (req, res) => {
+  const courseCode = req.params.courseCode;
+
+  if (!courseCode) {
+    return res.status(400).json({ message: "Ders kodu gerekli." });
+  }
+
+  try {
+    console.log(`📋 ${courseCode} dersinin öğrencileri getiriliyor...`);
+    
+    const result = await pool.query("SELECT id FROM courses WHERE code = $1", [courseCode]);
+    if (result.rows.length === 0) {
+      console.log(`⚠️ Ders bulunamadı: ${courseCode}`);
+      return res.status(404).json({ message: "Ders bulunamadı." });
+    }
+
+    const courseId = result.rows[0].id;
+
+    const [approved, pending] = await Promise.all([
+      pool.query("SELECT * FROM students WHERE course_id = $1 AND is_approved = true", [courseId]),
+      pool.query("SELECT * FROM students WHERE course_id = $1 AND is_approved = false", [courseId])
+    ]);
+
+    console.log(`✅ ${courseCode} dersi için ${approved.rows.length} onaylı, ${pending.rows.length} bekleyen öğrenci bulundu.`);
+
+    res.json({
+      approvedStudents: approved.rows,
+      pendingStudents: pending.rows
+    });
+  } catch (err) {
+    console.error(`❌ Öğrenci listesi getirme hatası (${courseCode}):`, err);
+    res.status(500).json({ message: "Sunucu hatası: " + (err.message || "Bilinmeyen hata") });
   }
 });
 
